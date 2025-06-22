@@ -22,11 +22,14 @@ public:
     }
 
     void fillTelemetryPacket(double latitude, double longitude, float altitude, float speed, uint8_t satellites, float temperature, float humidity, float pressure, float voltage);
+    void decodeTelemetryPacket(double &latitude, double &longitude,
+                           float &altitude, float &speed, uint8_t &satellites,
+                           float &temperature, float &humidity, float &pressure, float &voltage);
 
 private:
     void pack_lat_lon(double lat, double lon);
-    uint8_t big_number_ecode(uint8_t A, uint8_t A_min, uint8_t A_max, uint8_t B, uint8_t B_min, uint8_t B_max);
-    void big_number_decode(uint8_t C, uint8_t A_min, uint8_t A_max, uint8_t B_min, uint8_t B_max, uint8_t &A_out, uint8_t &B_out);
+    uint8_t big_number_encode(uint8_t A, uint8_t A_min, uint8_t A_max, uint8_t B, uint8_t B_min, uint8_t B_max);
+    void big_number_decode(uint8_t packed, uint8_t A_min, uint8_t A_max, uint8_t B_min, uint8_t B_max, uint8_t &A, uint8_t &B);
     uint8_t buffer[BUFFER_SIZE];
 };
 
