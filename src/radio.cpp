@@ -1,7 +1,7 @@
 #include "radio.h"
 
 SX1262 sx1262 = new Module(SX1262_CS_PIN, SX1262_DIO1_PIN, SX1262_RST_PIN, SX1262_BUSY_PIN);
-volatile bool Radio::transmittedFlag = false;
+volatile bool Radio::flag = false;
 
 Radio::Radio()
 {
@@ -49,15 +49,15 @@ void Radio::begin()
 void Radio::setFlag()
 {
     // we sent a packet, set the flag
-    transmittedFlag = true;
+    flag = true;
 }
 
 void Radio::update()
 {
-    if (transmittedFlag)
+    if (flag)
     {
         // Reset the flag
-        transmittedFlag = false;
+        flag = false;
 
         if (transmissionState == RADIOLIB_ERR_NONE)
         {
@@ -81,7 +81,7 @@ void Radio::update()
 void Radio::sendPacket(const uint8_t *data, size_t size)
 {
     // Send the packet
-    if (!transmittedFlag)
+    if (!flag)
     {
         DEBUG_PRINTLN(F("[SX1262] Starting transmission..."));
         transmissionState = sx1262.startTransmit(data, size);
@@ -92,27 +92,42 @@ void Radio::sendPacket(const uint8_t *data, size_t size)
     }
 }
 
-void Radio::waitForCommand()
+void Radio::receivePacket(uint8_t *buffer, size_t size)
 {
-    bool commandReceived = false;
-    while (!commandReceived)
-    {
-        DEBUG_PRINTLN(F("[SX1262] Waiting for incoming transmission ... "));
-        String str;
-        int state = sx1262.receive(str);
+    bool received = false;
+    int state = sx1262.startReceive();
+    if (state == RADIOLIB_ERR_NONE) {
+        DEBUG_PRINTLN(F("[SX1262] Started Receiving..."));
+    } else {
+        DEBUG_PRINT(F("failed, code "));
+        DEBUG_PRINTLN(state);
+    }
 
-        if (state == RADIOLIB_ERR_NONE)
-        {
-            // packet was successfully received
-            DEBUG_PRINTLN(F("[SX1262] Received Packet!"));
-            if (str == "START")
+    while (!received)
+    {
+        if (flag) {
+            received = true; // we received a packet
+            flag = false; // reset the flag
+            int state = sx1262.readData(buffer, size);
+            if (state == RADIOLIB_ERR_NONE)
             {
-                DEBUG_PRINTLN(F("[SX1262] Command received!"));
-                commandReceived = true;
+                // packet was successfully received
+                DEBUG_PRINTLN(F("[SX1262] Received Packet!"));
+                // Get the RSSI, SNR and frequency error
+                rssi = sx1262.getRSSI();
+                snr = sx1262.getSNR();
+                frequencyError = sx1262.getFrequencyError();
+            }
+            else if (state == RADIOLIB_ERR_CRC_MISMATCH)
+            {
+                // packet was received, but is malformed
+                DEBUG_PRINTLN(F("CRC error!"));
             }
             else
             {
-                DEBUG_PRINTLN(F("[SX1262] Unknown command received."));
+                // some other error occurred
+                DEBUG_PRINT(F("[SX1262] Error receiving packet: "));
+                DEBUG_PRINTLN(state);
             }
         }
     }
