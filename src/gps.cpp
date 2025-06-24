@@ -33,7 +33,7 @@ void GPS::update()
         gps.encode(c);
     }
     // Update cached data if a valid fix is available
-    if (gps.location.isValid())
+    if (gps.location.isValid() &&  gps.location.age() < 2000)
     {
         // DEBUG_PRINTLN("[GPS] Valid fix received.");
         latitude = gps.location.lat();
@@ -42,5 +42,14 @@ void GPS::update()
         satellites = gps.satellites.value();
         speed = gps.speed.kmph();
         time = gps.time.value();
+    } else
+    {
+        // DEBUG_PRINTLN("[GPS] No valid fix.");
+        latitude = 0.0;
+        longitude = 0.0;
+        altitude = 0.0;
+        satellites = gps.satellites.value(); // satellites will still be valid even if no fix
+        speed = 0.0;
+        time = gps.time.value(); // even if no fix, the time will still be updated
     }
 }
