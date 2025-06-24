@@ -44,7 +44,7 @@ void Telemetry::fillTelemetryPacket(double latitude, double longitude, float alt
     {
         temperature = AHT20_TEMPERATURE_MAX;
     }
-    
+
     uint16_t tempBinary = (uint16_t)((temperature - AHT20_TEMPERATURE_MIN) / (AHT20_TEMPERATURE_MAX - AHT20_TEMPERATURE_MIN) * 65535);
     buffer[9] = (tempBinary >> 8) & 0xFF;
     buffer[10] = tempBinary & 0xFF;
@@ -130,7 +130,8 @@ uint8_t Telemetry::big_number_encode(uint8_t A, uint8_t A_min, uint8_t A_max, ui
 }
 
 // Decode the big_number_ecode packed byte
-void Telemetry::big_number_decode(uint8_t packed, uint8_t A_min, uint8_t A_max, uint8_t B_min, uint8_t B_max, uint8_t &A, uint8_t &B) {
+void Telemetry::big_number_decode(uint8_t packed, uint8_t A_min, uint8_t A_max, uint8_t B_min, uint8_t B_max, uint8_t &A, uint8_t &B)
+{
     uint8_t A_range = A_max - A_min + 1;
     uint8_t B_range = B_max - B_min + 1;
 
@@ -142,8 +143,8 @@ void Telemetry::big_number_decode(uint8_t packed, uint8_t A_min, uint8_t A_max, 
 
 // Decode the telemetry packet
 void Telemetry::decodeTelemetryPacket(double &latitude, double &longitude,
-                           float &altitude, float &speed, uint8_t &satellites,
-                           float &temperature, float &humidity, float &pressure, float &voltage)
+                                      float &altitude, float &speed, uint8_t &satellites,
+                                      float &temperature, float &humidity, float &pressure, float &voltage)
 {
     // Unpack latitude
     uint32_t lat_enc = (buffer[0] << 16) | (buffer[1] << 8) | buffer[2];

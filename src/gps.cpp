@@ -35,7 +35,7 @@ void GPS::update()
     // Update cached data if a valid fix is available
     if (gps.location.isValid())
     {
-        //DEBUG_PRINTLN("[GPS] Valid fix received.");
+        // DEBUG_PRINTLN("[GPS] Valid fix received.");
         latitude = gps.location.lat();
         longitude = gps.location.lng();
         altitude = gps.altitude.meters();

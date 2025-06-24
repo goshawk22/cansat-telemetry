@@ -33,6 +33,9 @@
 // we set the interval to 930ms
 #define LORA_INTERVAL 930 // in milliseconds, so 1 second
 
+// Flash memory interval
+#define FLASH_INTERVAL 1000 // in milliseconds, so 1 second
+
 // Battery voltage measurement
 // Schottky diode voltage drop is about 0.25V at 100mA
 // R1 = 200kOhm, R2 = 100kOhm
@@ -86,9 +89,11 @@
 #define DEBUG_SERIAL Serial
 #define DEBUG_PRINTLN(x) DEBUG_SERIAL.println(x)
 #define DEBUG_PRINT(x) DEBUG_SERIAL.print(x)
+#define DEBUG_PRINTF(...) DEBUG_SERIAL.printf(__VA_ARGS__)
 #else
 #define DEBUG_PRINTLN(x)
 #define DEBUG_PRINT(x)
+#define DEBUG_PRINTF(...)
 #endif
 #ifdef VERBOSE
 #ifdef DEBUG

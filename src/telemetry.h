@@ -23,8 +23,8 @@ public:
 
     void fillTelemetryPacket(double latitude, double longitude, float altitude, float speed, uint8_t satellites, float temperature, float humidity, float pressure, float voltage);
     void decodeTelemetryPacket(double &latitude, double &longitude,
-                           float &altitude, float &speed, uint8_t &satellites,
-                           float &temperature, float &humidity, float &pressure, float &voltage);
+                               float &altitude, float &speed, uint8_t &satellites,
+                               float &temperature, float &humidity, float &pressure, float &voltage);
 
 private:
     void pack_lat_lon(double lat, double lon);
