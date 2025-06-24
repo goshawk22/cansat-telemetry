@@ -96,18 +96,22 @@ void Radio::receivePacket(uint8_t *buffer, size_t size)
 {
     bool received = false;
     int state = sx1262.startReceive();
-    if (state == RADIOLIB_ERR_NONE) {
+    if (state == RADIOLIB_ERR_NONE)
+    {
         DEBUG_PRINTLN(F("[SX1262] Started Receiving..."));
-    } else {
+    }
+    else
+    {
         DEBUG_PRINT(F("failed, code "));
         DEBUG_PRINTLN(state);
     }
 
     while (!received)
     {
-        if (flag) {
+        if (flag)
+        {
             received = true; // we received a packet
-            flag = false; // reset the flag
+            flag = false;    // reset the flag
             int state = sx1262.readData(buffer, size);
             if (state == RADIOLIB_ERR_NONE)
             {

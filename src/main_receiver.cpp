@@ -9,12 +9,10 @@ Telemetry telemetry;
 void setup()
 {
     Serial.begin(115200);
-#ifdef DEBUG
     while (!Serial)
     {
-        ; // wait for serial port to connect. Needed for native USB port only
+        ; // Wait for Serial to be ready
     }
-#endif
 
     Serial.println("[Main] Starting setup...");
 
@@ -23,7 +21,6 @@ void setup()
 
     Serial.println("[Main] Setup completed.");
 }
-
 
 void loop()
 {

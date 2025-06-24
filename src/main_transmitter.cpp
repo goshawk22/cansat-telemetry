@@ -4,27 +4,52 @@
 #include "telemetry.h"
 #include "config.h"
 #include <Arduino.h>
+#include "CommandInterface.h"
+#include "Flash.h"
 
 Radio radio;
 Sensors sensors;
 SerialPIO gpsSerial(GPS_TX_PIN, GPS_RX_PIN);
 GPS gps(gpsSerial, GPS_BAUD_RATE);
 Telemetry telemetry;
+CommandInterface cmd;
+Flash flash;
 
 void setup()
 {
     Serial.begin(115200);
-#ifdef DEBUG
-    while (!Serial)
+    unsigned long serialWaitStart = millis();
+    bool serialConnected = false;
+    while (!Serial && (millis() - serialWaitStart < 5000))
     {
-        ; // wait for serial port to connect. Needed for native USB port only
+        ; // wait for serial port to connect, but only up to 5 seconds
     }
-#endif
+    if (Serial)
+    {
+        serialConnected = true;
+        cmd.begin(&flash); // Start command interface
+
+        // Stay in command interface until it exits
+        while (cmd.isRunning())
+        {
+            cmd.loop();
+            delay(10);
+        }
+
+        // Optionally, print a message before continuing
+        Serial.println("[Main] Exiting command interface, continuing setup...");
+    }
 
     Serial.println("[Main] Starting setup...");
 
     // Initialize radio
     radio.begin();
+
+    // Intitialize flash memory
+    flash.begin();
+
+    // Create a new file for flight data
+    flash.createFile();
 
     // Initialize sensors
     sensors.begin();
@@ -38,6 +63,7 @@ void setup()
 void loop()
 {
     static unsigned long lastPrintTime = 0;
+    static unsigned long lastWriteTime = 0;
     static unsigned long lastTransmitTime = 0;
 
     // Update GPS
@@ -46,7 +72,7 @@ void loop()
     // Update radio
     radio.update();
 
-    // Respect 10% duty cycle: transmit at most once every 10 seconds
+    // Respect 10% duty cycle: transmit at most once every LORA_INTERVAL milliseconds
     if (radio.isReady() && (millis() - lastTransmitTime > LORA_INTERVAL))
     {
         lastTransmitTime = millis();
@@ -60,6 +86,21 @@ void loop()
                                       sensors.getRelativeHumidity(), sensors.getPressure(), sensors.getVoltage());
 
         radio.sendPacket(telemetry.getBuffer(), telemetry.getSize());
+    }
+
+    // Write telemetry data to flash memory and time how long it takes
+    if (flash.isInitialized() && (millis() - lastWriteTime > FLASH_INTERVAL))
+    {
+        lastWriteTime = millis();
+
+        // Update sensors
+        sensors.update();
+
+        // Write telemetry data to flash memory
+        flash.write(gps.getTime(), gps.getLatitude(), gps.getLongitude(),
+                    gps.getAltitude(), gps.getSpeed(), gps.getSatellites(),
+                    sensors.getTemperature(), sensors.getRelativeHumidity(),
+                    sensors.getPressure(), sensors.getVoltage());
     }
 
     if (millis() - lastPrintTime > 5000)
