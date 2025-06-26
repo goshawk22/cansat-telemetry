@@ -11,7 +11,7 @@ public:
     void begin();
     void update();
     void sendPacket(const uint8_t *data, size_t size);
-    void receivePacket(uint8_t *buffer, size_t size);
+    int receivePacket(uint8_t *buffer, size_t size);
     bool isReady() const
     {
         return readyFlag;
@@ -28,10 +28,14 @@ public:
     {
         return frequencyError;
     }
+    bool hasInitialised() const
+    {
+        return initialised;
+    }
 
 private:
     static void setFlag();
-
+    bool initialised = false; // flag to indicate if the radio failed to initialize
     // flag to indicate that a packet was sent
     static volatile bool flag;
     // flag to indicate that radio is ready for transmission
@@ -42,4 +46,4 @@ private:
     float snr;
     float frequencyError;
 };
-#endif
+#endif // RADIO_H

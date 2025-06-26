@@ -27,6 +27,7 @@ void Radio::begin()
     else
     {
         DEBUG_PRINTLN("[SX1262] Radio initialized successfully.");
+        initialised = true; // set the initialised flag
     }
 
     // We use DIO2 as RF switch
@@ -35,6 +36,7 @@ void Radio::begin()
     {
         DEBUG_PRINT(F("[SX1262] Failed to set DIO2 as RF switch! Status: "));
         DEBUG_PRINTLN(status);
+        initialised = false; // set the initialised flag
     }
     else
     {
@@ -44,6 +46,7 @@ void Radio::begin()
     // set the function that will be called
     // when packet transmission is finished
     sx1262.setPacketSentAction(Radio::setFlag);
+    sx1262.setPacketReceivedAction(Radio::setFlag);
 }
 
 void Radio::setFlag()
@@ -78,6 +81,7 @@ void Radio::update()
     }
 }
 
+//  This function is used to send a packet
 void Radio::sendPacket(const uint8_t *data, size_t size)
 {
     // Send the packet
@@ -85,6 +89,7 @@ void Radio::sendPacket(const uint8_t *data, size_t size)
     {
         DEBUG_PRINTLN(F("[SX1262] Starting transmission..."));
         transmissionState = sx1262.startTransmit(data, size);
+        readyFlag = false; // set the radio as not ready for next transmission
     }
     else
     {
@@ -92,7 +97,7 @@ void Radio::sendPacket(const uint8_t *data, size_t size)
     }
 }
 
-void Radio::receivePacket(uint8_t *buffer, size_t size)
+int Radio::receivePacket(uint8_t *buffer, size_t size)
 {
     bool received = false;
     int state = sx1262.startReceive();
@@ -135,4 +140,5 @@ void Radio::receivePacket(uint8_t *buffer, size_t size)
             }
         }
     }
+    return state; // return the state of the receive operation
 }
