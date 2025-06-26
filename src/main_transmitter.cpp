@@ -58,6 +58,40 @@ void setup()
     gps.begin();
 
     Serial.println("[Main] Setup completed.");
+    DEBUG_PRINTLN("[Main] System is waiting for START command.");
+    // Wait for the START command from the receiver
+    bool gotStartCommand = false;
+    while (!gotStartCommand)
+    {
+        // Check if the radio is ready to receive
+        uint8_t buffer[5];
+        int state = radio.receivePacket(buffer, sizeof(buffer));
+        if (state == RADIOLIB_ERR_NONE)
+        {
+            if (strncmp((const char *)buffer, "START", 5) == 0)
+            {
+                Serial.println("[Main] Received START command.");
+                gotStartCommand = true; // We received the START command
+                // Send acknowledgment back to the receiver
+                DEBUG_PRINTLN("[Main] Sending ACK to receiver.");
+                radio.sendPacket((const uint8_t *)"ACK", 3);
+                while (!radio.isReady())
+                {
+                    // Wait until the radio has sent the ACK
+                    radio.update();
+                }
+            }
+            else
+            {
+                DEBUG_PRINTLN("[Main] Received unknown packet.");
+            }
+        }
+        else
+        {
+            DEBUG_PRINT("[Main] Failed to receive packet, error code: ");
+            DEBUG_PRINTLN(state);
+        }
+    }
 }
 
 void loop()

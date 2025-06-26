@@ -2,6 +2,7 @@
 
 CommandInterface::CommandInterface() {}
 
+#ifdef TRANSMITTER
 void CommandInterface::begin(Flash *flashPTR)
 {
     flash = flashPTR;
@@ -12,6 +13,27 @@ void CommandInterface::begin(Flash *flashPTR)
     running = true;
     printMenu();
 }
+#else
+void CommandInterface::begin(Radio *radioPTR)
+{
+    // Initialize the radio module
+    radio = *radioPTR;
+
+    if (!radio.hasInitialised())
+    {
+        radio.begin();
+        if (!radio.hasInitialised())
+        {
+            DEBUG_PRINTLN("Radio initialization failed. Please check the connections.");
+            return;
+        }
+    }
+
+    // Start the command interface
+    running = true;
+    printMenu();
+}
+#endif
 
 void CommandInterface::loop()
 {
@@ -28,16 +50,25 @@ void CommandInterface::loop()
 
 void CommandInterface::printMenu()
 {
+#ifdef TRANSMITTER
+    Serial.println("=== Command Interface (Transmitter) ===");
     Serial.println("=== Command Interface ===");
     Serial.println("1: List flights");
     Serial.println("2: Download flight data");
     Serial.println("3: Format flight data");
     Serial.println("exit: Exit Command Interface and continue setup");
     Serial.print("> ");
+#else
+    Serial.println("=== Command Interface (Receiver) ===");
+    Serial.println("1: Send START command");
+    Serial.println("exit: Exit Command Interface and start listening for data");
+    Serial.print("> ");
+#endif
 }
 
 void CommandInterface::handleCommand(const String &cmd)
 {
+#ifdef TRANSMITTER
     if (cmd == "1")
     {
         std::vector<String> flights = flash->listFlights();
@@ -114,5 +145,65 @@ void CommandInterface::handleCommand(const String &cmd)
     {
         Serial.println("Unknown command.");
     }
+#else
+    if (cmd == "1")
+    {
+        bool gotAck = false;
+        uint8_t numReceivedPackets = 0;
+        while (!gotAck)
+        {
+            Serial.println("Sending START command...");
+            radio.sendPacket((const uint8_t *)"START", 5);
+            while (!radio.isReady())
+            {
+                // Wait until the radio is ready to send the packet
+                radio.update();
+            }
+            // Wait for the ACK from the transmitter
+            if (radio.isReady())
+            {
+                uint8_t buffer[5];
+                int state = radio.receivePacket(buffer, sizeof(buffer));
+                if (state == RADIOLIB_ERR_NONE)
+                {
+                    if (strncmp((const char *)buffer, "ACK", 3) == 0)
+                    {
+                        Serial.println("Received ACK for START command.");
+                        gotAck = true;
+                        running = false; // Exit the command interface
+                        return;
+                    }
+                    else
+                    {
+                        Serial.println("Received unknown packet.");
+                        numReceivedPackets++;
+                        if (numReceivedPackets >= 5)
+                        {
+                            Serial.println("Lots of unknown packets received, exiting command interface as we probably missed the ACK.");
+                            running = false;
+                            return;
+                        }
+                    }
+                }
+                else
+                {
+                    Serial.print("Failed to receive packet, error code: ");
+                    Serial.println(state);
+                }
+            }
+            delay(1000); // Wait before sending again
+        }
+    }
+    else if (cmd == "exit")
+    {
+        Serial.println("Exiting command interface.");
+        running = false;
+        return;
+    }
+    else
+    {
+        Serial.println("Unknown command.");
+    }
+#endif
     printMenu();
 }
